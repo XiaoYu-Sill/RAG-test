@@ -186,11 +186,11 @@ async function streamAnswer(question, bubbleEl) {
 }
 
 function renderMarkdownInBubble(el, rawText, streaming) {
-  // Parse markdown, then replace [来源X] with hoverable citation spans
+  // Parse markdown, then replace [来源X] with hoverable citation spans (data-attr only, no inline handlers)
   const html = marked.parse(rawText);
   const withCites = html.replace(/\[来源(\d+)\]/g, (match, num) => {
-    const idx = parseInt(num) - 1;
-    return `<span class="cite-link" data-src-idx="${idx}" onmouseenter="showTooltip(event,${idx})" onmouseleave="hideTooltip()" onclick="scrollToSource(${idx})">${match}</span>`;
+    const idx = parseInt(num, 10) - 1;
+    return `<span class="cite-link" data-src-idx="${idx}">${match}</span>`;
   });
 
   if (streaming) {
@@ -198,6 +198,13 @@ function renderMarkdownInBubble(el, rawText, streaming) {
   } else {
     el.innerHTML = withCites;
   }
+  // Attach cite-link handlers via event delegation (avoids inline handler risks)
+  el.querySelectorAll('.cite-link[data-src-idx]').forEach(span => {
+    const idx = parseInt(span.dataset.srcIdx, 10);
+    span.addEventListener('mouseenter', (e) => showTooltip(e, idx));
+    span.addEventListener('mouseleave', hideTooltip);
+    span.addEventListener('click', () => scrollToSource(idx));
+  });
   hljs.highlightAll();
 }
 
@@ -348,16 +355,24 @@ function renderDocumentList() {
     documentList.innerHTML = '<li class="doc-empty">暂无文档，请上传</li>';
     return;
   }
-  documentList.innerHTML = documents.map(doc => `
+  documentList.innerHTML = documents.map((doc, idx) => `
     <li class="doc-item">
       <span class="doc-icon">${fileIcon(doc.ext)}</span>
       <div class="doc-info">
         <div class="doc-name" title="${escapeHtml(doc.filename)}">${escapeHtml(doc.filename)}</div>
-        <div class="doc-meta">${doc.chunks} 片段 · ${formatSize(doc.size)}</div>
+        <div class="doc-meta">${escapeHtml(String(doc.chunks))} 片段 · ${formatSize(doc.size)}</div>
       </div>
-      <button class="doc-delete" title="删除文档" onclick="deleteDocument('${escapeHtml(doc.filename)}')">🗑</button>
+      <button class="doc-delete" title="删除文档" data-doc-idx="${idx}">🗑</button>
     </li>
   `).join('');
+
+  // Attach delete handlers via data attribute (avoids inline handler XSS risk)
+  documentList.querySelectorAll('.doc-delete').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.docIdx, 10);
+      if (!isNaN(idx) && documents[idx]) deleteDocument(documents[idx].filename);
+    });
+  });
 }
 
 async function deleteDocument(filename) {

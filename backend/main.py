@@ -77,18 +77,18 @@ async def serve_index():
 
 @app.get("/frontend/{file_path:path}")
 async def serve_frontend(file_path: str):
-    # Reject any path traversal attempts
-    normalized = os.path.normpath(file_path)
-    if normalized.startswith(".."):
-        raise HTTPException(status_code=400, detail="Invalid path")
-    abs_path = os.path.realpath(os.path.join(FRONTEND_DIR, normalized))
+    # Canonicalize and validate against the frontend root to prevent path traversal
     frontend_root = os.path.realpath(FRONTEND_DIR)
-    if not abs_path.startswith(frontend_root + os.sep) and abs_path != frontend_root:
+    abs_path = os.path.realpath(os.path.join(frontend_root, os.path.normpath(file_path)))
+    # Ensure the resolved path is strictly inside the frontend directory
+    if os.path.commonpath([abs_path, frontend_root]) != frontend_root:
         raise HTTPException(status_code=400, detail="Invalid path")
     if not os.path.isfile(abs_path):
         raise HTTPException(status_code=404, detail="File not found")
-    media_type, _ = mimetypes.guess_type(abs_path)
-    return FileResponse(abs_path, media_type=media_type or "application/octet-stream")
+    # Use the validated, canonicalized path from this point on
+    safe_path = abs_path
+    media_type, _ = mimetypes.guess_type(safe_path)
+    return FileResponse(safe_path, media_type=media_type or "application/octet-stream")
 
 
 # ---------------------------------------------------------------------------
@@ -167,12 +167,13 @@ async def delete_document(filename: str):
     # Remove from vector store
     removed_chunks = vector_store.delete_by_source(filename)
 
-    # Remove physical file — resolve path to prevent traversal
-    file_path = os.path.realpath(os.path.join(UPLOAD_DIR, filename))
-    if not file_path.startswith(os.path.realpath(UPLOAD_DIR) + os.sep):
+    # Remove physical file — canonicalize to prevent path traversal
+    upload_root = os.path.realpath(UPLOAD_DIR)
+    safe_file = os.path.realpath(os.path.join(upload_root, os.path.normpath(filename)))
+    if os.path.commonpath([safe_file, upload_root]) != upload_root:
         raise HTTPException(status_code=400, detail="Invalid filename")
-    if os.path.exists(file_path):
-        os.remove(file_path)
+    if os.path.exists(safe_file):
+        os.remove(safe_file)
 
     # Update metadata
     del meta[filename]
