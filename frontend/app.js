@@ -186,13 +186,7 @@ async function streamAnswer(question, bubbleEl) {
 }
 
 function renderMarkdownInBubble(el, rawText, streaming) {
-  // Replace [来源X] with clickable spans before markdown parsing
-  const processed = rawText.replace(/\[来源(\d+)\]/g, (match, num) => {
-    return `<span class="cite-link" data-src-idx="${parseInt(num) - 1}" onclick="scrollToSource(${parseInt(num) - 1})">${match}</span>`;
-  });
-
-  // We need to render markdown but preserve our cite-link HTML spans
-  // Strategy: parse as markdown, then re-inject cite spans
+  // Parse markdown, then replace [来源X] with hoverable citation spans
   const html = marked.parse(rawText);
   const withCites = html.replace(/\[来源(\d+)\]/g, (match, num) => {
     const idx = parseInt(num) - 1;

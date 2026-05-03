@@ -75,13 +75,20 @@ async def serve_index():
         return HTMLResponse(content=f.read())
 
 
-@app.get("/frontend/{filename}")
-async def serve_frontend(filename: str):
-    file_path = os.path.join(FRONTEND_DIR, filename)
-    if not os.path.exists(file_path):
+@app.get("/frontend/{file_path:path}")
+async def serve_frontend(file_path: str):
+    # Reject any path traversal attempts
+    normalized = os.path.normpath(file_path)
+    if normalized.startswith(".."):
+        raise HTTPException(status_code=400, detail="Invalid path")
+    abs_path = os.path.realpath(os.path.join(FRONTEND_DIR, normalized))
+    frontend_root = os.path.realpath(FRONTEND_DIR)
+    if not abs_path.startswith(frontend_root + os.sep) and abs_path != frontend_root:
+        raise HTTPException(status_code=400, detail="Invalid path")
+    if not os.path.isfile(abs_path):
         raise HTTPException(status_code=404, detail="File not found")
-    media_type, _ = mimetypes.guess_type(file_path)
-    return FileResponse(file_path, media_type=media_type or "application/octet-stream")
+    media_type, _ = mimetypes.guess_type(abs_path)
+    return FileResponse(abs_path, media_type=media_type or "application/octet-stream")
 
 
 # ---------------------------------------------------------------------------
@@ -160,8 +167,10 @@ async def delete_document(filename: str):
     # Remove from vector store
     removed_chunks = vector_store.delete_by_source(filename)
 
-    # Remove physical file
-    file_path = os.path.join(UPLOAD_DIR, filename)
+    # Remove physical file — resolve path to prevent traversal
+    file_path = os.path.realpath(os.path.join(UPLOAD_DIR, filename))
+    if not file_path.startswith(os.path.realpath(UPLOAD_DIR) + os.sep):
+        raise HTTPException(status_code=400, detail="Invalid filename")
     if os.path.exists(file_path):
         os.remove(file_path)
 
@@ -194,9 +203,9 @@ async def chat(request: ChatRequest):
             for sse_line in llm_client.stream_chat(request.question, chunks):
                 yield sse_line
         except Exception as e:
-            import json as _json
             logger.error(f"Chat error: {e}")
-            yield f"data: {_json.dumps({'type': 'error', 'message': str(e)}, ensure_ascii=False)}\n\n"
+            # Expose only a generic message to the client to avoid stack-trace leakage
+            yield f"data: {json.dumps({'type': 'error', 'message': '处理请求时发生错误，请稍后重试'}, ensure_ascii=False)}\n\n"
             yield 'data: {"type": "done"}\n\n'
 
     return StreamingResponse(
