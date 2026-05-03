@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# Environment variables
+.env
+
+# Vector store data (large binary files)
+data/vector_store/faiss.index
+data/vector_store/metadata.json
+data/vector_store/documents.json
+
+# Uploaded user files (privacy)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Frontend libs (downloaded by start.sh)
+frontend/libs/*.js
+!frontend/libs/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
