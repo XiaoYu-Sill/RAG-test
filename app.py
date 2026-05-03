@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import shutil
 import time
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
@@ -17,8 +18,17 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 UPLOAD_DIR = DATA_DIR / "uploads"
 
-app = FastAPI(title="RAG Doc QA")
 pipeline = RAGPipeline(DATA_DIR)
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    pipeline.initialize()
+    yield
+
+
+app = FastAPI(title="RAG Doc QA", lifespan=lifespan)
 
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 
@@ -26,12 +36,6 @@ app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 class ChatRequest(BaseModel):
     question: str = Field(..., min_length=1)
     top_k: int = Field(5, ge=1, le=10)
-
-
-@app.on_event("startup")
-def startup_event() -> None:
-    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-    pipeline.initialize()
 
 
 @app.get("/", response_class=HTMLResponse)

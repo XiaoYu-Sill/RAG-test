@@ -76,3 +76,7 @@ class LocalVectorStore:
         scores = self.embeddings @ query_vector
         top_indices = scores.argsort()[::-1][:top_k]
         return [(self.records[index], float(scores[index])) for index in top_indices]
+
+    def clear(self) -> None:
+        self.records = []
+        self.embeddings = np.empty((0, 0), dtype=np.float32)

@@ -97,12 +97,13 @@ def _load_doc(file_path: Path) -> list[Document]:
 def _load_csv(file_path: Path) -> list[Document]:
     df = pd.read_csv(file_path)
     documents: list[Document] = []
-    for index, row in df.iterrows():
-        row_text = ", ".join(f"{col}: {row[col]}" for col in df.columns)
+    columns = list(df.columns)
+    for index, row in enumerate(df.itertuples(index=False), start=1):
+        row_text = ", ".join(f"{col}: {row[col_index]}" for col_index, col in enumerate(columns))
         metadata = {
             **_base_metadata(file_path),
-            "row": int(index) + 1,
-            "location": f"第{int(index) + 1}行",
+            "row": index,
+            "location": f"第{index}行",
         }
         documents.append(Document(page_content=row_text, metadata=metadata))
     return documents
@@ -113,13 +114,14 @@ def _load_xlsx(file_path: Path) -> list[Document]:
     workbook = pd.ExcelFile(file_path)
     for sheet_name in workbook.sheet_names:
         df = workbook.parse(sheet_name)
-        for index, row in df.iterrows():
-            row_text = ", ".join(f"{col}: {row[col]}" for col in df.columns)
+        columns = list(df.columns)
+        for index, row in enumerate(df.itertuples(index=False), start=1):
+            row_text = ", ".join(f"{col}: {row[col_index]}" for col_index, col in enumerate(columns))
             metadata = {
                 **_base_metadata(file_path),
                 "sheet": sheet_name,
-                "row": int(index) + 1,
-                "location": f"{sheet_name} 第{int(index) + 1}行",
+                "row": index,
+                "location": f"{sheet_name} 第{index}行",
             }
             documents.append(Document(page_content=row_text, metadata=metadata))
     return documents

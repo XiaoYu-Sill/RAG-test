@@ -31,8 +31,7 @@ class RAGPipeline:
             self.build_index()
 
     def build_index(self) -> None:
-        self.vector_store.records = []
-        self.vector_store.embeddings = self.vector_store.embeddings[:0]
+        self.vector_store.clear()
         for file_path in self._scan_files():
             self.index_file(file_path)
         self.vector_store.save()

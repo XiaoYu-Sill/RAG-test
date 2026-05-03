@@ -7,7 +7,7 @@ const tooltip = document.getElementById("tooltip");
 
 let currentSources = {};
 
-function addMessage(role, content) {
+function addMessage(role, content, isHtml = false) {
   const message = document.createElement("div");
   message.className = `message ${role}`;
   const meta = document.createElement("div");
@@ -16,7 +16,11 @@ function addMessage(role, content) {
   const body = document.createElement("div");
   body.className = "body";
   if (content) {
-    body.innerHTML = content;
+    if (isHtml) {
+      body.innerHTML = content;
+    } else {
+      body.textContent = content;
+    }
   }
   message.appendChild(meta);
   message.appendChild(body);
@@ -69,14 +73,25 @@ async function sendQuestion() {
     return;
   }
   questionInput.value = "";
-  addMessage("user", renderMarkdown(question));
+  addMessage("user", renderMarkdown(question), true);
   const assistantBody = addMessage("assistant", "正在检索与生成回答...");
 
-  const response = await fetch("/api/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question }),
-  });
+  let response;
+  try {
+    response = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question }),
+    });
+  } catch (error) {
+    assistantBody.textContent = "网络异常，无法连接服务器。";
+    return;
+  }
+
+  if (!response.ok) {
+    assistantBody.textContent = `请求失败（${response.status}）`;
+    return;
+  }
 
   if (!response.body) {
     assistantBody.textContent = "无法建立流式连接。";
@@ -146,12 +161,16 @@ async function handleUpload(event) {
   uploadStatus.textContent = "上传中...";
   const form = new FormData();
   form.append("file", file);
-  const response = await fetch("/api/upload", { method: "POST", body: form });
-  const payload = await response.json();
-  if (!response.ok) {
-    uploadStatus.textContent = payload.detail || "上传失败";
-  } else {
-    uploadStatus.textContent = `已索引：${payload.filename}（${payload.indexed_chunks} 段）`;
+  try {
+    const response = await fetch("/api/upload", { method: "POST", body: form });
+    const payload = await response.json();
+    if (!response.ok) {
+      uploadStatus.textContent = payload.detail || "上传失败";
+    } else {
+      uploadStatus.textContent = `已索引：${payload.filename}（${payload.indexed_chunks} 段）`;
+    }
+  } catch (error) {
+    uploadStatus.textContent = "网络异常，上传失败";
   }
   fileInput.value = "";
 }
