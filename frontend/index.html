@@ -66,11 +66,11 @@
         <div class="welcome-icon">🚄</div>
         <h2>高铁应急文档智能问答助手</h2>
         <p>基于RAG检索增强生成技术，精准解答高铁事故应急处置相关问题</p>
-        <div class="suggestions">
-          <div class="suggestion-card" onclick="sendSuggestion(this)">高铁发生脱轨事故时，第一响应流程是什么？</div>
-          <div class="suggestion-card" onclick="sendSuggestion(this)">列车火灾时乘务人员的应急处置步骤？</div>
-          <div class="suggestion-card" onclick="sendSuggestion(this)">高铁接触网断电故障如何处理？</div>
-          <div class="suggestion-card" onclick="sendSuggestion(this)">旅客大规模疏散的标准程序是什么？</div>
+        <div class="suggestions" id="suggestions">
+          <div class="suggestion-card" data-suggestion="高铁发生脱轨事故时，第一响应流程是什么？">高铁发生脱轨事故时，第一响应流程是什么？</div>
+          <div class="suggestion-card" data-suggestion="列车火灾时乘务人员的应急处置步骤？">列车火灾时乘务人员的应急处置步骤？</div>
+          <div class="suggestion-card" data-suggestion="高铁接触网断电故障如何处理？">高铁接触网断电故障如何处理？</div>
+          <div class="suggestion-card" data-suggestion="旅客大规模疏散的标准程序是什么？">旅客大规模疏散的标准程序是什么？</div>
         </div>
       </div>
       <div class="messages" id="messages"></div>

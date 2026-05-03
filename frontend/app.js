@@ -70,11 +70,15 @@ questionInput.addEventListener('keydown', (e) => {
 
 sendBtn.addEventListener('click', handleSend);
 
-function sendSuggestion(el) {
-  questionInput.value = el.textContent.trim();
+// Attach suggestion card handlers via event delegation (no inline onclick)
+document.getElementById('suggestions').addEventListener('click', (e) => {
+  const card = e.target.closest('.suggestion-card');
+  if (!card) return;
+  const text = card.dataset.suggestion || card.textContent.trim();
+  questionInput.value = text;
   questionInput.dispatchEvent(new Event('input'));
   handleSend();
-}
+});
 
 /* ===== Send message ===== */
 async function handleSend() {

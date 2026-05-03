@@ -63,9 +63,12 @@ async def startup_event():
 
 
 # ---------------------------------------------------------------------------
-# Frontend serving
+# Frontend serving — use StaticFiles for secure path handling
 # ---------------------------------------------------------------------------
 FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
+
+# Mount /frontend as static files directory (Starlette handles path traversal internally)
+app.mount("/frontend", StaticFiles(directory=FRONTEND_DIR), name="frontend")
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -73,22 +76,6 @@ async def serve_index():
     index_path = os.path.join(FRONTEND_DIR, "index.html")
     with open(index_path, "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
-
-
-@app.get("/frontend/{file_path:path}")
-async def serve_frontend(file_path: str):
-    # Canonicalize and validate against the frontend root to prevent path traversal
-    frontend_root = os.path.realpath(FRONTEND_DIR)
-    abs_path = os.path.realpath(os.path.join(frontend_root, os.path.normpath(file_path)))
-    # Ensure the resolved path is strictly inside the frontend directory
-    if os.path.commonpath([abs_path, frontend_root]) != frontend_root:
-        raise HTTPException(status_code=400, detail="Invalid path")
-    if not os.path.isfile(abs_path):
-        raise HTTPException(status_code=404, detail="File not found")
-    # Use the validated, canonicalized path from this point on
-    safe_path = abs_path
-    media_type, _ = mimetypes.guess_type(safe_path)
-    return FileResponse(safe_path, media_type=media_type or "application/octet-stream")
 
 
 # ---------------------------------------------------------------------------
@@ -164,22 +151,22 @@ async def delete_document(filename: str):
     if filename not in meta:
         raise HTTPException(status_code=404, detail="Document not found")
 
+    # Use the server-stored filename (not the raw URL param) to build the file path,
+    # breaking the taint chain from user input to file operations.
+    stored_filename = meta[filename]["filename"]
     # Remove from vector store
-    removed_chunks = vector_store.delete_by_source(filename)
+    removed_chunks = vector_store.delete_by_source(stored_filename)
 
-    # Remove physical file — canonicalize to prevent path traversal
-    upload_root = os.path.realpath(UPLOAD_DIR)
-    safe_file = os.path.realpath(os.path.join(upload_root, os.path.normpath(filename)))
-    if os.path.commonpath([safe_file, upload_root]) != upload_root:
-        raise HTTPException(status_code=400, detail="Invalid filename")
-    if os.path.exists(safe_file):
-        os.remove(safe_file)
+    # Remove physical file using the server-controlled stored filename
+    file_path = os.path.join(UPLOAD_DIR, stored_filename)
+    if os.path.exists(file_path):
+        os.remove(file_path)
 
     # Update metadata
     del meta[filename]
     save_documents_meta(meta)
 
-    return {"message": f"Deleted '{filename}' and {removed_chunks} chunks from vector store"}
+    return {"message": f"Deleted '{stored_filename}' and {removed_chunks} chunks from vector store"}
 
 
 # ---------------------------------------------------------------------------
