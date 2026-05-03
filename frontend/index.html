@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>高铁应急文档智能问答系统</title>
+  <link rel="stylesheet" href="/frontend/styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <span class="logo-icon">🚄</span>
+        <span class="logo-text">应急文档RAG</span>
+      </div>
+      <button class="new-chat-btn" id="newChatBtn">
+        <span class="btn-icon">＋</span> 新对话
+      </button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="section-title">文档管理</div>
+      <div class="upload-area" id="uploadArea">
+        <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.csv,.xlsx,.pptx,.txt,.md" hidden multiple />
+        <button class="upload-btn" id="uploadBtn">
+          <span>📄</span> 上传文档
+        </button>
+        <div class="upload-hint">支持 PDF / Word / Excel / PPT / CSV</div>
+      </div>
+      <div id="uploadProgress" class="upload-progress hidden">
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        <span id="progressText">上传中...</span>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="section-title">已索引文档 <span id="docCount" class="badge">0</span></div>
+      <ul class="document-list" id="documentList">
+        <li class="doc-empty">暂无文档，请上传</li>
+      </ul>
+    </div>
+
+    <div class="sidebar-footer">
+      <div id="systemStatus" class="status-badge status-ok">系统正常</div>
+    </div>
+  </aside>
+
+  <!-- Main area -->
+  <main class="main">
+    <!-- Topbar -->
+    <header class="topbar">
+      <button class="sidebar-toggle" id="sidebarToggle">☰</button>
+      <h1 class="topbar-title">高铁事故应急处置文档智能问答</h1>
+    </header>
+
+    <!-- Chat messages -->
+    <div class="chat-container" id="chatContainer">
+      <div class="welcome-screen" id="welcomeScreen">
+        <div class="welcome-icon">🚄</div>
+        <h2>高铁应急文档智能问答助手</h2>
+        <p>基于RAG检索增强生成技术，精准解答高铁事故应急处置相关问题</p>
+        <div class="suggestions">
+          <div class="suggestion-card" onclick="sendSuggestion(this)">高铁发生脱轨事故时，第一响应流程是什么？</div>
+          <div class="suggestion-card" onclick="sendSuggestion(this)">列车火灾时乘务人员的应急处置步骤？</div>
+          <div class="suggestion-card" onclick="sendSuggestion(this)">高铁接触网断电故障如何处理？</div>
+          <div class="suggestion-card" onclick="sendSuggestion(this)">旅客大规模疏散的标准程序是什么？</div>
+        </div>
+      </div>
+      <div class="messages" id="messages"></div>
+    </div>
+
+    <!-- Input area -->
+    <div class="input-area">
+      <div class="input-wrapper">
+        <textarea
+          id="questionInput"
+          class="question-input"
+          placeholder="输入您的问题，例如：高铁火灾应急处置流程..."
+          rows="1"
+          maxlength="2000"
+        ></textarea>
+        <div class="input-actions">
+          <span class="char-count" id="charCount">0/2000</span>
+          <button class="send-btn" id="sendBtn" disabled>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="input-footer">
+        <span>按 Enter 发送，Shift+Enter 换行</span>
+        <label class="top-k-label">检索数量:
+          <select id="topKSelect">
+            <option value="3">3</option>
+            <option value="5" selected>5</option>
+            <option value="8">8</option>
+            <option value="10">10</option>
+          </select>
+        </label>
+      </div>
+    </div>
+  </main>
+
+  <!-- Source tooltip -->
+  <div class="source-tooltip" id="sourceTooltip"></div>
+
+  <script src="/frontend/app.js"></script>
+</body>
+</html>
