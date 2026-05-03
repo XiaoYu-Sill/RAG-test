@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>高铁事故应急处置 RAG 问答</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  </head>
+  <body>
+    <div class="app">
+      <header class="app-header">
+        <h1>高铁事故应急处置 RAG 问答</h1>
+        <div class="upload">
+          <label class="upload-button" for="fileInput">上传文件</label>
+          <input id="fileInput" type="file" />
+          <span id="uploadStatus" class="upload-status"></span>
+        </div>
+      </header>
+      <main class="chat" id="chat"></main>
+      <footer class="composer">
+        <textarea id="questionInput" rows="2" placeholder="请输入问题，例如：列车脱线事故的处置流程是什么？"></textarea>
+        <button id="sendButton">发送</button>
+      </footer>
+    </div>
+    <div id="tooltip" class="tooltip hidden"></div>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

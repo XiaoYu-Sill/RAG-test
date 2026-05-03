@@ -1,0 +1,11 @@
+__pycache__/
+.venv/
+*.pyc
+data/uploads/
+data/vector_store/
+data/*.pdf
+data/*.doc
+data/*.docx
+data/*.pptx
+data/*.xlsx
+data/*.csv
